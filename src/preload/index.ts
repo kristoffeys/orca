@@ -2055,6 +2055,68 @@ const api = {
     }): Promise<JiraProjectStatusOrder> => ipcRenderer.invoke('jira:getProjectStatusOrder', args)
   },
 
+  productive: {
+    connect: (args: {
+      apiToken: string
+      organizationId: string
+    }): Promise<{ ok: true } | { ok: false; error: string }> =>
+      ipcRenderer.invoke('productive:connect', args),
+
+    disconnect: (): Promise<void> => ipcRenderer.invoke('productive:disconnect'),
+
+    status: (): Promise<unknown> => ipcRenderer.invoke('productive:status'),
+
+    testConnection: (): Promise<{ ok: true } | { ok: false; error: string }> =>
+      ipcRenderer.invoke('productive:testConnection'),
+
+    searchTasks: (args: { query: string; limit?: number }): Promise<unknown[]> =>
+      ipcRenderer.invoke('productive:searchTasks', args),
+
+    listTasks: (args?: {
+      filter?: 'assigned' | 'reported' | 'all' | 'done'
+      limit?: number
+      projectIds?: string[]
+    }): Promise<unknown[]> => ipcRenderer.invoke('productive:listTasks', args),
+
+    getTask: (args: { taskId: string }): Promise<unknown> =>
+      ipcRenderer.invoke('productive:getTask', args),
+
+    createTask: (args: {
+      projectId: string
+      taskListId?: string
+      title: string
+      description?: string
+      assigneeId?: string
+    }): Promise<{ ok: true; id: string; url: string } | { ok: false; error: string }> =>
+      ipcRenderer.invoke('productive:createTask', args),
+
+    updateTask: (args: {
+      taskId: string
+      updates: unknown
+    }): Promise<{ ok: true } | { ok: false; error: string }> =>
+      ipcRenderer.invoke('productive:updateTask', args),
+
+    addTaskComment: (args: {
+      taskId: string
+      body: string
+    }): Promise<{ ok: true; id: string } | { ok: false; error: string }> =>
+      ipcRenderer.invoke('productive:addTaskComment', args),
+
+    taskComments: (args: { taskId: string }): Promise<unknown[]> =>
+      ipcRenderer.invoke('productive:taskComments', args),
+
+    listProjects: (): Promise<unknown[]> => ipcRenderer.invoke('productive:listProjects'),
+
+    listTaskLists: (args: { projectId: string }): Promise<unknown[]> =>
+      ipcRenderer.invoke('productive:listTaskLists', args),
+
+    listWorkflowStatuses: (): Promise<unknown[]> =>
+      ipcRenderer.invoke('productive:listWorkflowStatuses'),
+
+    listAssignablePeople: (args?: { query?: string }): Promise<unknown[]> =>
+      ipcRenderer.invoke('productive:listAssignablePeople', args)
+  },
+
   starNag: {
     onShow: (
       callback: (payload?: { mode?: 'gh' | 'web'; surface?: 'card' | 'toast' }) => void

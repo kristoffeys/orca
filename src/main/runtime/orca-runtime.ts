@@ -956,6 +956,31 @@ import {
   updateIssue as updateJiraIssue
 } from '../jira/issues'
 import {
+  connect as connectProductive,
+  disconnect as disconnectProductive,
+  getStatus as getProductiveStatus,
+  testConnection as testProductiveConnection
+} from '../productive/client'
+import {
+  addTaskComment as addProductiveTaskComment,
+  createTask as createProductiveTask,
+  getTask as getProductiveTask,
+  getTaskComments as getProductiveTaskComments,
+  listAssignablePeople as listProductiveAssignablePeople,
+  listProjects as listProductiveProjects,
+  listTaskLists as listProductiveTaskLists,
+  listTasks as listProductiveTasks,
+  listWorkflowStatuses as listProductiveWorkflowStatuses,
+  searchTasks as searchProductiveTasks,
+  updateTask as updateProductiveTask
+} from '../productive/tasks'
+import type {
+  ProductiveConnectArgs,
+  ProductiveCreateTaskArgs,
+  ProductiveTaskFilter,
+  ProductiveTaskUpdate
+} from '../../shared/productive-types'
+import {
   clearProjectItemFieldValue,
   getProjectViewTable,
   getWorkItemDetailsBySlug,
@@ -37831,6 +37856,80 @@ export class OrcaRuntimeService {
     siteId?: string
   ): ReturnType<typeof getJiraProjectStatusOrder> {
     return getJiraProjectStatusOrder(projectKey, siteId)
+  }
+
+  // ── Productive integration ──
+
+  productiveConnect(args: ProductiveConnectArgs): ReturnType<typeof connectProductive> {
+    return connectProductive(args)
+  }
+
+  productiveDisconnect(): { ok: true } {
+    return disconnectProductive()
+  }
+
+  productiveStatus(): ReturnType<typeof getProductiveStatus> {
+    return getProductiveStatus()
+  }
+
+  productiveTestConnection(): ReturnType<typeof testProductiveConnection> {
+    return testProductiveConnection()
+  }
+
+  productiveSearchTasks(query: string, limit?: number): ReturnType<typeof searchProductiveTasks> {
+    return searchProductiveTasks(query, limit)
+  }
+
+  productiveListTasks(
+    filter?: ProductiveTaskFilter,
+    limit?: number,
+    projectIds?: string[]
+  ): ReturnType<typeof listProductiveTasks> {
+    return listProductiveTasks(filter, limit, projectIds)
+  }
+
+  productiveGetTask(taskId: string): ReturnType<typeof getProductiveTask> {
+    return getProductiveTask(taskId)
+  }
+
+  productiveCreateTask(args: ProductiveCreateTaskArgs): ReturnType<typeof createProductiveTask> {
+    return createProductiveTask(args)
+  }
+
+  productiveUpdateTask(
+    taskId: string,
+    updates: ProductiveTaskUpdate
+  ): ReturnType<typeof updateProductiveTask> {
+    return updateProductiveTask(taskId, updates)
+  }
+
+  productiveAddTaskComment(
+    taskId: string,
+    body: string
+  ): ReturnType<typeof addProductiveTaskComment> {
+    return addProductiveTaskComment(taskId, body)
+  }
+
+  productiveTaskComments(taskId: string): ReturnType<typeof getProductiveTaskComments> {
+    return getProductiveTaskComments(taskId)
+  }
+
+  productiveListProjects(): ReturnType<typeof listProductiveProjects> {
+    return listProductiveProjects()
+  }
+
+  productiveListTaskLists(projectId: string): ReturnType<typeof listProductiveTaskLists> {
+    return listProductiveTaskLists(projectId)
+  }
+
+  productiveListWorkflowStatuses(): ReturnType<typeof listProductiveWorkflowStatuses> {
+    return listProductiveWorkflowStatuses()
+  }
+
+  productiveListAssignablePeople(
+    query?: string
+  ): ReturnType<typeof listProductiveAssignablePeople> {
+    return listProductiveAssignablePeople(query)
   }
 
   // ── Browser automation ──
