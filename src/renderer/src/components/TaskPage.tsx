@@ -90,6 +90,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import TaskProjectSourceCombobox from '@/components/task-project-source-combobox'
 import { JiraConnectDialog } from '@/components/jira-connect-dialog'
+import ProductiveProjectMultiCombobox from '@/components/productive/ProductiveProjectMultiCombobox'
+import { getProductiveTaskProjectGroups } from '@/components/productive/productive-task-project-groups'
 import { LinearApiKeyDialog } from '@/components/linear-api-key-dialog'
 import { LinearScopeSelector } from '@/components/linear-scope-selector'
 import RepoBadgeLabel from '@/components/repo/RepoBadgeLabel'
@@ -206,7 +208,10 @@ import {
   getTaskPageJiraStatusOrderScopeKey,
   loadTaskPageJiraProjectStatusOrder
 } from '@/components/task-page-jira-status-order'
+import ProductiveTaskWorkspace from '@/components/ProductiveTaskWorkspace'
 import { JiraIcon } from '@/components/icons/JiraIcon'
+import { ProductiveIcon } from '@/components/icons/ProductiveIcon'
+import { ProductiveConnectDialog } from '@/components/productive-connect-dialog'
 import { cn } from '@/lib/utils'
 import {
   getLinkedWorkItemSuggestedName,
@@ -312,6 +317,7 @@ import {
 } from '@/store/slices/task-creation-drafts'
 import { useTaskCreationDraftRetention } from '@/components/use-task-creation-draft-retention'
 import { findTaskPageJiraIssue } from '@/components/task-page-jira-cache-selectors'
+import { findTaskPageProductiveTask } from '@/components/task-page-productive-cache-selectors'
 import { getRepoBackedTaskEmptyState } from '@/components/task-page-empty-state'
 import {
   getDefaultTaskRepoSelection,
@@ -366,6 +372,11 @@ import type {
   JiraProject,
   JiraProjectStatusOrder
 } from '../../../shared/jira-types'
+import type {
+  ProductiveProject,
+  ProductiveTask,
+  ProductiveTaskFilter
+} from '../../../shared/productive-types'
 import type { LinearIssue } from '../../../shared/linear/issue-types'
 import type {
   LinearCustomViewModel,
@@ -434,6 +445,7 @@ import {
   getGitLabIssueFilters,
   getGitLabMRFilters,
   getJiraPresets,
+  getProductivePresets,
   getLinearDisplayProperties,
   getLinearGroupOptions,
   getLinearModeOptions,
@@ -982,6 +994,12 @@ function getLinearIssueGridTemplate(visibleProperties: ReadonlySet<LinearDisplay
   return columns.join(' ')
 }
 
+// Why: Productive workflow categories are mapped to the same
+// 'new'|'indeterminate'|'done' keys Jira uses (mapper.ts), so the pill tones
+// are identical; this delegating alias keeps the call sites self-documenting.
+function getProductiveStatusTone(categoryKey: string): string {
+  return getJiraStatusTone(categoryKey)
+}
 type TaskPageGitHubWorkItemMutationRunner = {
   run: (input: {
     item: GitHubWorkItem
@@ -3050,6 +3068,14 @@ export default function TaskPage(): React.JSX.Element {
   const searchJiraIssues = useAppStore((s) => s.searchJiraIssues)
   const listJiraIssues = useAppStore((s) => s.listJiraIssues)
   const checkJiraConnection = useAppStore((s) => s.checkJiraConnection)
+  const productiveStatus = useAppStore((s) => s.productiveStatus)
+  const productiveStatusChecked = useAppStore((s) => s.productiveStatusChecked)
+  const productiveStatusContextKey = useAppStore((s) => s.productiveStatusContextKey)
+  const searchProductiveTasks = useAppStore((s) => s.searchProductiveTasks)
+  const listProductiveTasks = useAppStore((s) => s.listProductiveTasks)
+  const listProductiveProjects = useAppStore((s) => s.listProductiveProjects)
+  const fetchProductiveTask = useAppStore((s) => s.fetchProductiveTask)
+  const checkProductiveConnection = useAppStore((s) => s.checkProductiveConnection)
   const providerRuntimeContextKey = getProviderRuntimeContextKey(settings)
   const providerRuntimeContextKeyRef = useRef(providerRuntimeContextKey)
   providerRuntimeContextKeyRef.current = providerRuntimeContextKey
@@ -3058,8 +3084,11 @@ export default function TaskPage(): React.JSX.Element {
   const preflightStatusCurrent = preflightStatusContextKey === expectedPreflightContextKey
   const linearStatusReady = linearStatusCurrent && linearStatusChecked
   const jiraStatusReady = jiraStatusCurrent && jiraStatusChecked
+  const productiveStatusCurrent = productiveStatusContextKey === providerRuntimeContextKey
+  const productiveStatusReady = productiveStatusCurrent && productiveStatusChecked
   const linearConnected = linearStatusCurrent && linearStatus.connected
   const jiraConnected = jiraStatusCurrent && jiraStatus.connected
+  const productiveConnected = productiveStatusCurrent && productiveStatus.connected
   const submitShortcutLabel = getScreenSubmitShortcutLabel()
   const eligibleRepos = useMemo(() => getTaskEligibleRepos(repos), [repos])
 
@@ -3182,6 +3211,7 @@ export default function TaskPage(): React.JSX.Element {
   const githubModeButtons = getGitHubModeButtons()
   const linearModeOptions = getLinearModeOptions()
   const jiraPresets = getJiraPresets()
+  const productivePresets = getProductivePresets()
   const gitLabIssueFilters = getGitLabIssueFilters()
   const gitLabMRFilters = getGitLabMRFilters()
   const linearViewOptions = getLinearViewOptions()
@@ -3447,6 +3477,17 @@ export default function TaskPage(): React.JSX.Element {
   const jiraTaskSourceScopeKey = jiraTaskSourceContext
     ? getTaskSourceCacheScope(jiraTaskSourceContext)
     : providerRuntimeContextKey
+  const productiveTaskSourceContext = useMemo(
+    () =>
+      normalizeTaskSourceContext({
+        provider: 'productive',
+        projectId: fallbackTaskSourceProjectId,
+        providerIdentity: {
+          provider: 'productive'
+        }
+      }),
+    [fallbackTaskSourceProjectId]
+  )
   const accountBackedTaskSourceHostAvailability = useMemo<TaskSourceHostAvailability[]>(() => {
     if (taskSource !== 'linear' && taskSource !== 'jira') {
       return []
@@ -4335,7 +4376,9 @@ export default function TaskPage(): React.JSX.Element {
         openLinearIssue: undefined,
         openLinearSourceContext: undefined,
         openJiraIssue: undefined,
-        openJiraSourceContext: undefined
+        openJiraSourceContext: undefined,
+        openProductiveTask: undefined,
+        openProductiveSourceContext: undefined
       }
     }))
   }, [clearSelectedLinearIssue, setDialogWorkItem])
@@ -4398,6 +4441,66 @@ export default function TaskPage(): React.JSX.Element {
       )
     },
     [jiraTaskSourceContext, openTaskPage]
+  )
+
+  const [selectedProductiveTaskId, setSelectedProductiveTaskId] = useState<string | null>(null)
+  const [selectedProductiveTaskFallback, setSelectedProductiveTaskFallback] =
+    useState<ProductiveTask | null>(null)
+  const productiveCacheSnapshot = useAppStore(
+    useShallow((s) => ({
+      taskCache: s.productiveTaskCache,
+      searchCache: s.productiveSearchCache
+    }))
+  )
+  const cachedSelectedProductiveTask = findTaskPageProductiveTask(
+    productiveCacheSnapshot.taskCache,
+    productiveCacheSnapshot.searchCache,
+    selectedProductiveTaskId,
+    { sourceContext: productiveTaskSourceContext }
+  )
+  const selectedProductiveTask = selectedProductiveTaskId
+    ? (cachedSelectedProductiveTask ?? selectedProductiveTaskFallback)
+    : null
+  const productiveDetailSourceContext = useMemo(() => {
+    if (
+      selectedProductiveTask &&
+      pageData.openProductiveSourceContext?.provider === 'productive' &&
+      pageData.openProductiveTask?.id === selectedProductiveTask.id
+    ) {
+      return pageData.openProductiveSourceContext
+    }
+    return productiveTaskSourceContext
+  }, [
+    productiveTaskSourceContext,
+    pageData.openProductiveTask,
+    pageData.openProductiveSourceContext,
+    selectedProductiveTask
+  ])
+
+  const setSelectedProductiveTask = useCallback((task: ProductiveTask | null) => {
+    setSelectedProductiveTaskId(task?.id ?? null)
+    setSelectedProductiveTaskFallback(task)
+  }, [])
+
+  useEffect(() => {
+    setSelectedProductiveTask(pageData.openProductiveTask ?? null)
+  }, [pageData.openProductiveTask, setSelectedProductiveTask])
+
+  const openProductiveDetailPage = useCallback(
+    (task: ProductiveTask) => {
+      openTaskPage(
+        {
+          taskSource: 'productive',
+          openProductiveTask: task,
+          openProductiveSourceContext: productiveTaskSourceContext
+        },
+        { recordTasksInteraction: false }
+      )
+      // Why: warm the slice cache so the drawer can hydrate from cache while
+      // the workspace's own getTask refresh is in flight, mirroring Jira.
+      void fetchProductiveTask(task.id, { sourceContext: productiveTaskSourceContext })
+    },
+    [fetchProductiveTask, openTaskPage, productiveTaskSourceContext]
   )
 
   // Linear tab state
@@ -4677,6 +4780,30 @@ export default function TaskPage(): React.JSX.Element {
     },
     [jiraOrderBy]
   )
+
+  // Productive tab state (single-credential, read-only list for v1)
+  const [productiveTasks, setProductiveTasks] = useState<ProductiveTask[]>([])
+  const [productiveLoading, setProductiveLoading] = useState(false)
+  const [productiveError, setProductiveError] = useState<string | null>(null)
+  const [productiveSearchInput, setProductiveSearchInput] = useState('')
+  const [appliedProductiveSearch, setAppliedProductiveSearch] = useState('')
+  const [activeProductiveFilter, setActiveProductiveFilter] =
+    useState<ProductiveTaskFilter>('assigned')
+  const [productiveConnectOpen, setProductiveConnectOpen] = useState(false)
+  // Productive project filter (selection lives in component state only, no
+  // settings persistence). An empty set means sticky-all (no server filter).
+  const [productiveProjects, setProductiveProjects] = useState<ProductiveProject[]>([])
+  const [productiveProjectSelection, setProductiveProjectSelection] = useState<ReadonlySet<string>>(
+    () => new Set()
+  )
+  // Why: group rows under project headers (GitHub/Linear idiom). Headers only
+  // make sense when more than one project is in view, mirroring the GitHub
+  // `selectedRepos.length > 1` guard; a single project stays a flat list.
+  const productiveTaskGroups = useMemo(
+    () => getProductiveTaskProjectGroups(productiveTasks),
+    [productiveTasks]
+  )
+  const showProductiveGroupHeaders = productiveTaskGroups.length > 1
 
   useEffect(() => {
     if (taskResumeAppliedRef.current || !persistedUIReady || !settings) {
@@ -7953,12 +8080,18 @@ export default function TaskPage(): React.JSX.Element {
     if (!jiraStatusReady) {
       void checkJiraConnection()
     }
+    if (!productiveStatusReady) {
+      void checkProductiveConnection()
+    }
   }, [
     checkJiraConnection,
+    checkProductiveConnection,
     checkLinearConnection,
     expectedPreflightContextKey,
     jiraStatusContextKey,
     jiraStatusReady,
+    productiveStatusContextKey,
+    productiveStatusReady,
     linearStatusContextKey,
     linearStatusReady,
     providerRuntimeContextKey,
@@ -8693,6 +8826,124 @@ export default function TaskPage(): React.JSX.Element {
     jiraTaskSourceScopeKey
   ])
 
+  // Why: debounce the Productive search input on the same 300ms cadence used by
+  // the other providers so we don't fire a request on every keystroke.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setAppliedProductiveSearch(productiveSearchInput)
+    }, 300)
+    return () => {
+      clearTimeout(handle)
+    }
+  }, [productiveSearchInput])
+
+  // Why: load the project list once the Productive tab is connected so the
+  // PROJECT filter has options. Defaults the selection to sticky-all (empty set)
+  // so no server-side project filter is applied until the user narrows it.
+  useEffect(() => {
+    if (taskSource !== 'productive' || !productiveConnected) {
+      return
+    }
+    let cancelled = false
+    void listProductiveProjects({ sourceContext: productiveTaskSourceContext })
+      .then((projects) => {
+        if (cancelled) {
+          return
+        }
+        setProductiveProjects(projects)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProductiveProjects([])
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [taskSource, productiveConnected, productiveTaskSourceContext, listProductiveProjects])
+
+  // Why: drop selected ids that no longer exist once the project list resolves,
+  // so the filter never references stale projects.
+  useEffect(() => {
+    if (productiveProjects.length === 0 || productiveProjectSelection.size === 0) {
+      return
+    }
+    const valid = new Set(productiveProjects.map((project) => project.id))
+    let changed = false
+    for (const id of productiveProjectSelection) {
+      if (!valid.has(id)) {
+        changed = true
+        break
+      }
+    }
+    if (!changed) {
+      return
+    }
+    const pruned = new Set([...productiveProjectSelection].filter((id) => valid.has(id)))
+    setProductiveProjectSelection(pruned)
+  }, [productiveProjects, productiveProjectSelection])
+
+  useEffect(() => {
+    if (!taskResumeApplied || taskSource !== 'productive' || !productiveConnected) {
+      return
+    }
+
+    let cancelled = false
+    setProductiveLoading(true)
+    setProductiveError(null)
+
+    const trimmed = appliedProductiveSearch.trim()
+    // Why: an empty or full selection means "all projects" — pass undefined so
+    // the backend applies no project filter; otherwise scope to the chosen ids.
+    const projectIds =
+      productiveProjectSelection.size > 0 &&
+      productiveProjectSelection.size < productiveProjects.length
+        ? [...productiveProjectSelection]
+        : undefined
+    const request =
+      trimmed.length > 0
+        ? searchProductiveTasks(trimmed, JIRA_ITEM_LIMIT, {
+            sourceContext: productiveTaskSourceContext
+          })
+        : listProductiveTasks(
+            activeProductiveFilter,
+            JIRA_ITEM_LIMIT,
+            { sourceContext: productiveTaskSourceContext },
+            projectIds
+          )
+
+    void request
+      .then((tasks) => {
+        if (cancelled) {
+          return
+        }
+        setProductiveTasks(tasks)
+        setProductiveLoading(false)
+      })
+      .catch((err) => {
+        if (cancelled) {
+          return
+        }
+        setProductiveTasks([])
+        setProductiveError(err instanceof Error ? err.message : 'Failed to load Productive tasks.')
+        setProductiveLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    taskSource,
+    productiveConnected,
+    appliedProductiveSearch,
+    activeProductiveFilter,
+    taskResumeApplied,
+    productiveTaskSourceContext,
+    productiveProjectSelection,
+    productiveProjects.length
+  ])
+
   useEffect(() => {
     if (!taskResumeApplied || taskSource !== 'jira') {
       return
@@ -8718,6 +8969,35 @@ export default function TaskPage(): React.JSX.Element {
     jiraConnected,
     selectedJiraIssueFallback,
     selectedJiraIssueKey,
+    taskResumeApplied,
+    taskSource
+  ])
+
+  useEffect(() => {
+    if (!taskResumeApplied || taskSource !== 'productive') {
+      return
+    }
+    if (!productiveConnected || productiveTasks.length === 0) {
+      if (selectedProductiveTaskId !== null) {
+        setSelectedProductiveTaskId(null)
+      }
+      if (selectedProductiveTaskFallback !== null) {
+        setSelectedProductiveTaskFallback(null)
+      }
+      return
+    }
+    if (
+      selectedProductiveTaskId &&
+      !productiveTasks.some((task) => task.id === selectedProductiveTaskId)
+    ) {
+      setSelectedProductiveTaskId(null)
+      setSelectedProductiveTaskFallback(null)
+    }
+  }, [
+    productiveTasks,
+    productiveConnected,
+    selectedProductiveTaskFallback,
+    selectedProductiveTaskId,
     taskResumeApplied,
     taskSource
   ])
@@ -8864,11 +9144,43 @@ export default function TaskPage(): React.JSX.Element {
     [openComposerForJiraItem]
   )
 
+  const openComposerForProductiveItem = useCallback(
+    (task: ProductiveTask): void => {
+      // Why: Productive identifiers are strings (e.g. "#1"), so we use 0 as the
+      // numeric placeholder just like Jira/Linear and carry the human id via
+      // productiveIdentifier for workspace naming + linked-task rehydration.
+      const linkedWorkItem: LinkedWorkItemSummary = {
+        type: 'issue',
+        provider: 'productive',
+        number: 0,
+        title: `${task.productiveIdentifier} ${task.title}`,
+        url: task.url,
+        productiveIdentifier: task.productiveIdentifier
+      }
+      openModal('new-workspace-composer', {
+        linkedWorkItem,
+        taskSourceContext: productiveTaskSourceContext,
+        prefilledName: task.title,
+        telemetrySource: 'sidebar'
+      })
+    },
+    [openModal, productiveTaskSourceContext]
+  )
+
+  const handleUseProductiveItem = useCallback(
+    (task: ProductiveTask): void => {
+      useAppStore.getState().recordFeatureInteraction('productive-tasks')
+      openComposerForProductiveItem(task)
+    },
+    [openComposerForProductiveItem]
+  )
+
   const taskPageListChromeHidden = shouldHideTaskPageListChrome({
     taskSource,
     hasGitHubDetail: Boolean(dialogWorkItem),
     hasGitLabDetail: Boolean(gitlabDialogItem),
     hasJiraDetail: Boolean(selectedJiraIssue),
+    hasProductiveDetail: Boolean(selectedProductiveTask),
     hasLinearIssueDetail: Boolean(selectedLinearIssue),
     hasLinearProjectContext: Boolean(selectedLinearProject),
     hasLinearViewContext: Boolean(selectedLinearCustomView)
@@ -10987,6 +11299,322 @@ export default function TaskPage(): React.JSX.Element {
                   onUse={handleUseJiraItem}
                   onClose={closeTaskDetailPage}
                   sourceContext={jiraDetailSourceContext}
+                />
+              </div>
+            )
+          ) : taskSource === 'productive' ? (
+            !productiveStatusReady ? (
+              <div className="mt-4 flex items-center justify-center py-14">
+                <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : !productiveConnected ? (
+              <div className="mt-4 flex flex-col items-center justify-center rounded-md border border-border/50 bg-muted/50 px-6 py-14 text-center shadow-sm">
+                <ProductiveIcon className="mb-4 size-8 text-muted-foreground/60" />
+                <p className="text-base font-medium text-foreground">
+                  {translate(
+                    'auto.components.TaskPage.productiveconnecttitle',
+                    'Connect your Productive account'
+                  )}
+                </p>
+                <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+                  {translate(
+                    'auto.components.TaskPage.productiveconnectbody',
+                    'Browse and start work from Productive tasks directly from here.'
+                  )}
+                </p>
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                  <Button onClick={() => setProductiveConnectOpen(true)}>
+                    {translate(
+                      'auto.components.TaskPage.productiveconnectcta',
+                      'Connect Productive'
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => hideTaskSource('productive', 'Productive')}
+                  >
+                    {translate('auto.components.TaskPage.productivehide', 'Hide Productive')}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex min-h-0 max-h-full flex-col overflow-hidden rounded-md rounded-t-none border border-t-0 border-border/50 bg-background shadow-sm">
+                <div className="flex h-10 flex-none items-center justify-between gap-3 border-b border-border/50 bg-muted/35 px-3">
+                  <div className="shrink-0 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                    {translate(
+                      'auto.components.TaskPage.productivetasksheader',
+                      'Productive tasks'
+                    )}
+                  </div>
+                  <div className="flex min-w-0 items-center gap-1">
+                    {productivePresets.map((preset) => {
+                      const active = !productiveSearchInput && activeProductiveFilter === preset.id
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => {
+                            setProductiveSearchInput('')
+                            setAppliedProductiveSearch('')
+                            setActiveProductiveFilter(preset.id)
+                          }}
+                          className={cn(
+                            'rounded px-2 py-1 text-[11px] font-medium transition-colors',
+                            active
+                              ? 'bg-accent text-accent-foreground'
+                              : 'text-muted-foreground hover:bg-muted/60'
+                          )}
+                        >
+                          {preset.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {productiveProjects.length > 0 ? (
+                    <div className="ml-auto shrink-0">
+                      <ProductiveProjectMultiCombobox
+                        projects={productiveProjects}
+                        selected={
+                          productiveProjectSelection.size === 0
+                            ? new Set(productiveProjects.map((project) => project.id))
+                            : productiveProjectSelection
+                        }
+                        onChange={(next) => setProductiveProjectSelection(next)}
+                        onSelectAll={() => setProductiveProjectSelection(new Set())}
+                        triggerClassName="h-7 w-auto min-w-[8rem] max-w-[16rem]"
+                      />
+                    </div>
+                  ) : null}
+                  <div className="shrink-0 text-[11px] text-muted-foreground">
+                    {productiveTasks.length}{' '}
+                    {translate('auto.components.TaskPage.b7bae28b6a', 'shown')}
+                  </div>
+                </div>
+
+                <div className="grid h-8 flex-none grid-cols-[90px_minmax(0,1fr)_128px_80px] items-center gap-3 border-b border-border/50 bg-muted/25 px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground max-md:!hidden lg:grid-cols-[96px_minmax(0,1.25fr)_132px_136px_96px_64px] xl:grid-cols-[104px_minmax(0,1.45fr)_144px_160px_128px_72px]">
+                  <span>{translate('auto.components.TaskPage.productiveidentifier', 'ID')}</span>
+                  <span>{translate('auto.components.TaskPage.productivetask', 'Task')}</span>
+                  <span>{translate('auto.components.TaskPage.154b0fa623', 'Status')}</span>
+                  <span className="block max-lg:!hidden">
+                    {translate('auto.components.TaskPage.d2a876ca53', 'Assignee')}
+                  </span>
+                  <span>{translate('auto.components.TaskPage.f362667d55', 'Updated')}</span>
+                  <span />
+                </div>
+
+                <div
+                  className="min-h-0 flex-1 overflow-y-auto scrollbar-sleek"
+                  style={{ scrollbarGutter: 'stable' }}
+                >
+                  {productiveStatus.credentialError ? (
+                    <div className="border-b border-border px-4 py-4 text-sm text-destructive">
+                      {productiveStatus.credentialError}
+                    </div>
+                  ) : null}
+                  {!productiveStatus.credentialError && productiveError ? (
+                    <div className="border-b border-border px-4 py-4 text-sm text-destructive">
+                      {productiveError}
+                    </div>
+                  ) : null}
+
+                  {productiveLoading && productiveTasks.length === 0 ? (
+                    <div className="divide-y divide-border/50">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="px-3 py-3">
+                          <div className="h-4 w-4/5 animate-pulse rounded bg-muted/70" />
+                          <div className="mt-2 h-3 w-3/5 animate-pulse rounded bg-muted/60" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {!productiveLoading &&
+                  productiveTasks.length === 0 &&
+                  !productiveError &&
+                  !productiveStatus.credentialError ? (
+                    <div className="px-4 py-10 text-center">
+                      <p className="text-sm font-medium text-foreground">
+                        {translate(
+                          'auto.components.TaskPage.productiveempty',
+                          'No Productive tasks found'
+                        )}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {productiveTaskGroups.map((group) => (
+                    <div key={group.project.id}>
+                      {showProductiveGroupHeaders ? (
+                        <div className="flex h-9 items-center justify-between border-b border-border/50 bg-muted/15 px-3">
+                          <span className="truncate text-xs font-medium text-foreground">
+                            {group.project.name}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {group.tasks.length}
+                          </span>
+                        </div>
+                      ) : null}
+                      <div className="divide-y divide-border/50">
+                        {group.tasks.map((task) => {
+                          const selected = task.id === selectedProductiveTaskId
+                          return (
+                            <div
+                              key={task.id}
+                              role="button"
+                              tabIndex={0}
+                              aria-current={selected ? 'true' : undefined}
+                              data-current={selected ? 'true' : undefined}
+                              onClick={() => openProductiveDetailPage(task)}
+                              onKeyDown={(e) => {
+                                if (e.target !== e.currentTarget) {
+                                  return
+                                }
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault()
+                                  openProductiveDetailPage(task)
+                                }
+                              }}
+                              className={cn(
+                                'group/row grid min-h-12 cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-2 text-left transition hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:grid-cols-[90px_minmax(0,1fr)_128px_80px] lg:grid-cols-[96px_minmax(0,1.25fr)_132px_136px_96px_64px] xl:grid-cols-[104px_minmax(0,1.45fr)_144px_160px_128px_72px]',
+                                selected && 'bg-accent'
+                              )}
+                            >
+                              <span className="block truncate font-mono text-[12px] text-muted-foreground max-md:!hidden">
+                                {task.productiveIdentifier}
+                              </span>
+
+                              <div className="min-w-0">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <span className="shrink-0 font-mono text-[11px] text-muted-foreground md:hidden">
+                                    {task.productiveIdentifier}
+                                  </span>
+                                  <h3 className="min-w-0 truncate text-[13px] font-medium text-foreground">
+                                    {task.title}
+                                  </h3>
+                                </div>
+                                <div className="mt-1 flex min-w-0 items-center gap-1.5 md:!hidden">
+                                  <span
+                                    className={cn(
+                                      'inline-flex min-w-0 items-center rounded-full border px-1.5 py-0.5 text-[11px] font-medium',
+                                      getProductiveStatusTone(task.status.categoryKey)
+                                    )}
+                                  >
+                                    <span className="truncate">{task.status.name}</span>
+                                  </span>
+                                  <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+                                    {task.assignee?.name ??
+                                      translate(
+                                        'auto.components.TaskPage.42a9160321',
+                                        'Unassigned'
+                                      )}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex min-w-0 max-md:!hidden">
+                                <span
+                                  className={cn(
+                                    'inline-flex max-w-full items-center rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                                    getProductiveStatusTone(task.status.categoryKey)
+                                  )}
+                                >
+                                  <span className="truncate">{task.status.name}</span>
+                                </span>
+                              </div>
+
+                              <div className="flex min-w-0 items-center gap-2 text-[12px] text-muted-foreground max-lg:!hidden">
+                                {task.assignee?.avatarUrl ? (
+                                  <img
+                                    src={task.assignee.avatarUrl}
+                                    alt={task.assignee.name}
+                                    className="size-5 shrink-0 rounded-full"
+                                  />
+                                ) : (
+                                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border/50 bg-muted/40 text-[10px]">
+                                    {task.assignee?.name?.slice(0, 1) ?? '-'}
+                                  </span>
+                                )}
+                                <span className="truncate">
+                                  {task.assignee?.name ??
+                                    translate('auto.components.TaskPage.42a9160321', 'Unassigned')}
+                                </span>
+                              </div>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="block min-w-0 truncate text-[12px] text-muted-foreground max-md:!hidden">
+                                    {formatRelativeTime(task.updatedAt)}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" sideOffset={6}>
+                                  {new Date(task.updatedAt).toLocaleString()}
+                                </TooltipContent>
+                              </Tooltip>
+
+                              <div className="flex shrink-0 items-center justify-end gap-1 md:opacity-0 md:transition-opacity md:group-hover/row:opacity-100 md:group-focus-within/row:opacity-100">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-xs"
+                                      onClick={(event) => {
+                                        event.stopPropagation()
+                                        handleUseProductiveItem(task)
+                                      }}
+                                      aria-label={translate(
+                                        'auto.components.TaskPage.ff90d0abc7',
+                                        'Start workspace from {{value0}}',
+                                        { value0: task.productiveIdentifier }
+                                      )}
+                                    >
+                                      <ArrowRight className="size-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" sideOffset={6}>
+                                    {translate(
+                                      'auto.components.TaskPage.9497f2787c',
+                                      'Start workspace'
+                                    )}
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-xs"
+                                      onClick={(event) => {
+                                        event.stopPropagation()
+                                        window.api.shell.openUrl(task.url)
+                                      }}
+                                      aria-label={translate(
+                                        'auto.components.TaskPage.productiveopenexternal',
+                                        'Open {{value0}} in Productive',
+                                        { value0: task.productiveIdentifier }
+                                      )}
+                                    >
+                                      <ExternalLink className="size-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" sideOffset={6}>
+                                    {translate(
+                                      'auto.components.TaskPage.productiveopenin',
+                                      'Open in Productive'
+                                    )}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <ProductiveTaskWorkspace
+                  task={selectedProductiveTask}
+                  onUse={handleUseProductiveItem}
+                  onClose={closeTaskDetailPage}
+                  sourceContext={productiveDetailSourceContext}
                 />
               </div>
             )
@@ -13567,6 +14195,10 @@ export default function TaskPage(): React.JSX.Element {
       />
 
       <JiraConnectDialog open={jiraConnectOpen} onOpenChange={setJiraConnectOpen} />
+      <ProductiveConnectDialog
+        open={productiveConnectOpen}
+        onOpenChange={setProductiveConnectOpen}
+      />
     </div>
   )
 }

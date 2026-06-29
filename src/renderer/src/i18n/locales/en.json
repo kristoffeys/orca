@@ -396,6 +396,10 @@
             "f03ae7f27b": "Failed to transfer project"
           }
         },
+        "productive": {
+          "viewermiss": "Connected, but could not load the Productive account.",
+          "superseded": "Productive connection was superseded by a newer request."
+        },
         "runtime": {
           "status": {
             "runtimeHostDisconnectedDescription": "Check that Orca is running on this server and that your network connection is working, then try again.",
@@ -2078,7 +2082,18 @@
         "linearModeHasWorktreeTooltip": "Linear tickets linked to an Orca workspace",
         "linearEmptyHasWorktree": "No Linear tickets are linked to an Orca workspace yet. Start work from a Linear issue to see it here.",
         "linearOpenAttachedWorkspace": "Open workspace attached to {{value0}}",
-        "linearWorktreesColumn": "Workspaces"
+        "linearWorktreesColumn": "Workspaces",
+        "productiveconnecttitle": "Connect your Productive account",
+        "productiveconnectbody": "Browse and start work from Productive tasks directly from here.",
+        "productiveconnectcta": "Connect Productive",
+        "productivehide": "Hide Productive",
+        "productiveempty": "No Productive tasks found",
+        "productiveopenexternal": "Open {{value0}} in Productive",
+        "productiveopenin": "Open in Productive",
+        "productive01": "Productive",
+        "productivetasksheader": "Productive tasks",
+        "productiveidentifier": "ID",
+        "productivetask": "Task"
       },
       "Terminal": {
         "73768427cf": "Close",
@@ -5004,7 +5019,8 @@
           "fee535205b": "Tasks",
           "d599269755": "Hide from sidebar",
           "artifacts": "Artifacts",
-          "skills": "Skills"
+          "skills": "Skills",
+          "productive01": "Open Productive tasks"
         },
         "SidebarRepositoryFilterSection": {
           "d3a9c4cea1": "Clear",
@@ -8105,7 +8121,10 @@
           "integrationsHint": "Credentials for all providers also live under",
           "integrationsLink": "Integrations",
           "skillHint": ". After Linear is connected, usage examples stay under Settings → Linear.",
-          "incompleteBannerBodyWithLinear": "Hide providers you do not use, or expand a card and finish its steps. For Linear: API access, the agent skill, and Show in Tasks."
+          "incompleteBannerBodyWithLinear": "Hide providers you do not use, or expand a card and finish its steps. For Linear: API access, the agent skill, and Show in Tasks.",
+          "1db47236cd": "Show GitHub in the Tasks source picker and sidebar shortcuts.",
+          "productive01": "Productive",
+          "productive02": "Show Productive in the Tasks source picker and sidebar shortcuts."
         },
         "TerminalAppearanceSection": {
           "a14a427ae4": "Thickness of the pane divider line.",
@@ -11271,6 +11290,21 @@
         },
         "shortcutDefinitionCatalog": {
           "missionControlConflict": "Blocked by Mission Control. Remap here or change it in System Settings."
+        },
+        "productive": {
+          "integration": {
+            "card": {
+              "cred_remote": "Connect your Productive organization with an API token and organization id. Credentials are sent to the selected remote runtime and stored there with runtime-supported encryption.",
+              "cred_local": "Connect your Productive organization with an API token and organization id. Credentials are stored locally and encrypted when local runtime storage supports it.",
+              "connected_desc": "Connected as {{value0}}",
+              "checking_desc": "Checking Productive access before showing setup actions.",
+              "disconnected_desc": "Browse, create, and start work from Productive tasks.",
+              "reconnect": "Reconnect",
+              "connect": "Connect Productive",
+              "organization": "Productive organization",
+              "disconnect_aria": "Disconnect Productive"
+            }
+          }
         }
       },
       "right": {
@@ -15833,6 +15867,53 @@
         "expiredCompact": "Expired",
         "typeMarkdown": "Markdown",
         "typeHtml": "HTML"
+      },
+      "productive": {
+        "connect": {
+          "dialog": {
+            "title": "Connect Productive",
+            "desc": "Use a Productive API token and organization id to browse tasks.",
+            "orglabel": "Organization id",
+            "orgph": "e.g. 12345",
+            "tokenlabel": "API token",
+            "tokenph": "Productive API token",
+            "tokenhelp": "Create a token in",
+            "tokensettings": "Productive API settings",
+            "cancel": "Cancel",
+            "verifying": "Verifying…",
+            "connect": "Connect",
+            "personlabel": "Person id (optional)",
+            "personph": "e.g. 96137",
+            "personhelp": "Your Productive person id. Optional, but enables the \"assigned to me\" task filters and shows your name. Find it in your Productive profile URL."
+          }
+        }
+      },
+      "ProductiveTaskWorkspace": {
+        "copysuccess": "{{value0}} copied",
+        "copyfail": "Failed to copy {{value0}}",
+        "updatefail": "Failed to update Productive task.",
+        "commentTooLarge": "Comment is too large to submit safely.",
+        "commentfail": "Failed to add comment.",
+        "openin": "Open in Productive",
+        "copyurl": "Copy URL",
+        "copyid": "Copy ID",
+        "copybranch": "Copy suggested branch name",
+        "copyprompt": "Copy prompt",
+        "tasktitle": "Productive task",
+        "taskdescription": "Preview, edit, and start work from the selected task.",
+        "startworkspace": "Start workspace",
+        "closepreview": "Close Productive task preview",
+        "close": "Close",
+        "addassignee": "+ Assignee",
+        "unassigned": "Unassigned",
+        "title": "Title",
+        "nodescription": "No description provided.",
+        "comments": "Comments",
+        "retry": "Retry",
+        "nocomments": "No comments yet.",
+        "unknown": "Unknown",
+        "commentplaceholder": "Add a Productive comment...",
+        "comment": "Comment"
       }
     },
     "i18n": {

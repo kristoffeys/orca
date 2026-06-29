@@ -310,6 +310,10 @@
             "f518e89aa5": "프로젝트가 해당 프로필에 이미 있습니다",
             "f03ae7f27b": "프로젝트를 전송하지 못했습니다"
           }
+        },
+        "productive": {
+          "viewermiss": "Connected, but could not load the Productive account.",
+          "superseded": "Productive connection was superseded by a newer request."
         }
       }
     },
@@ -1917,7 +1921,18 @@
         "jiraLinkSourceUnavailable": "Couldn’t link this Jira issue. Reconnect Jira or pick the matching site, then try again.",
         "loadPageUnreachable": "{{value0}} 페이지는 GitHub 검색이 반환할 수 있는 범위를 벗어났습니다.",
         "loadPageFailed": "GitHub에서 {{value0}} 페이지를 불러오지 못했습니다.",
-        "loadPageNoMoreResults": "{{value0}} 페이지에 더 이상 결과가 없습니다."
+        "loadPageNoMoreResults": "{{value0}} 페이지에 더 이상 결과가 없습니다.",
+        "productiveconnecttitle": "Connect your Productive account",
+        "productiveconnectbody": "Browse and start work from Productive tasks directly from here.",
+        "productiveconnectcta": "Connect Productive",
+        "productivehide": "Hide Productive",
+        "productiveempty": "No Productive tasks found",
+        "productiveopenexternal": "Open {{value0}} in Productive",
+        "productiveopenin": "Open in Productive",
+        "productive01": "Productive",
+        "productivetasksheader": "Productive tasks",
+        "productiveidentifier": "ID",
+        "productivetask": "Task"
       },
       "Terminal": {
         "73768427cf": "닫기",
@@ -4290,7 +4305,8 @@
           "196c1b5362": "GitLab 작업 열기",
           "0ccba862b8": "GitHub 작업 열기",
           "fee535205b": "작업",
-          "d599269755": "사이드바에서 숨기기"
+          "d599269755": "사이드바에서 숨기기",
+          "productive01": "Open Productive tasks"
         },
         "SidebarRepositoryFilterSection": {
           "d3a9c4cea1": "지우기",
@@ -7192,7 +7208,10 @@
           "integrationsHint": "모든 제공업체의 자격 증명은 다음에서도 관리할 수 있습니다:",
           "integrationsLink": "연동",
           "skillHint": ". Linear를 연결한 후 사용 예시는 설정 → Linear에서 확인할 수 있습니다.",
-          "incompleteBannerBodyWithLinear": "사용하지 않는 제공업체를 숨기거나 카드를 펼쳐 단계를 완료하세요. Linear에는 API 액세스, 에이전트 스킬, 작업에 표시가 필요합니다."
+          "incompleteBannerBodyWithLinear": "사용하지 않는 제공업체를 숨기거나 카드를 펼쳐 단계를 완료하세요. Linear에는 API 액세스, 에이전트 스킬, 작업에 표시가 필요합니다.",
+          "1db47236cd": "작업 소스 선택기 및 사이드바 바로가기에 GitHub를 표시합니다.",
+          "productive01": "Productive",
+          "productive02": "Show Productive in the Tasks source picker and sidebar shortcuts."
         },
         "TerminalAppearanceSection": {
           "a14a427ae4": "창 구분선의 두께입니다.",
@@ -10170,6 +10189,21 @@
           "reviewStepDescription": "최근 실행을 검토하고 필요할 때 언제든지 작업을 계속할 수 있습니다.",
           "openAutomations": "자동화 열기",
           "openAutomationsDescription": "일정을 생성하고 최근 실행을 확인합니다."
+        },
+        "productive": {
+          "integration": {
+            "card": {
+              "cred_remote": "Connect your Productive organization with an API token and organization id. Credentials are sent to the selected remote runtime and stored there with runtime-supported encryption.",
+              "cred_local": "Connect your Productive organization with an API token and organization id. Credentials are stored locally and encrypted when local runtime storage supports it.",
+              "connected_desc": "Connected as {{value0}}",
+              "checking_desc": "Checking Productive access before showing setup actions.",
+              "disconnected_desc": "Browse, create, and start work from Productive tasks.",
+              "reconnect": "Reconnect",
+              "connect": "Connect Productive",
+              "organization": "Productive organization",
+              "disconnect_aria": "Disconnect Productive"
+            }
+          }
         }
       },
       "right": {
@@ -14315,6 +14349,53 @@
           "deleteDescription": "“{{name}}”은(는) 공개 링크에서 더 이상 사용할 수 없습니다.",
           "delete": "삭제"
         }
+      },
+      "productive": {
+        "connect": {
+          "dialog": {
+            "title": "Connect Productive",
+            "desc": "Use a Productive API token and organization id to browse tasks.",
+            "orglabel": "Organization id",
+            "orgph": "e.g. 12345",
+            "tokenlabel": "API token",
+            "tokenph": "Productive API token",
+            "tokenhelp": "Create a token in",
+            "tokensettings": "Productive API settings",
+            "cancel": "Cancel",
+            "verifying": "Verifying…",
+            "connect": "Connect",
+            "personlabel": "Person id (optional)",
+            "personph": "e.g. 96137",
+            "personhelp": "Your Productive person id. Optional, but enables the \"assigned to me\" task filters and shows your name. Find it in your Productive profile URL."
+          }
+        }
+      },
+      "ProductiveTaskWorkspace": {
+        "copysuccess": "{{value0}} copied",
+        "copyfail": "Failed to copy {{value0}}",
+        "updatefail": "Failed to update Productive task.",
+        "commentTooLarge": "Comment is too large to submit safely.",
+        "commentfail": "Failed to add comment.",
+        "openin": "Open in Productive",
+        "copyurl": "Copy URL",
+        "copyid": "Copy ID",
+        "copybranch": "Copy suggested branch name",
+        "copyprompt": "Copy prompt",
+        "tasktitle": "Productive task",
+        "taskdescription": "Preview, edit, and start work from the selected task.",
+        "startworkspace": "Start workspace",
+        "closepreview": "Close Productive task preview",
+        "close": "Close",
+        "addassignee": "+ Assignee",
+        "unassigned": "Unassigned",
+        "title": "Title",
+        "nodescription": "No description provided.",
+        "comments": "Comments",
+        "retry": "Retry",
+        "nocomments": "No comments yet.",
+        "unknown": "Unknown",
+        "commentplaceholder": "Add a Productive comment...",
+        "comment": "Comment"
       }
     },
     "i18n": {
