@@ -135,6 +135,32 @@ function looksLikeHtml(value: string): boolean {
   return /<[a-zA-Z/][^>]*>/.test(value)
 }
 
+/** Why: Productive encodes @-mentions inline as `@[{...}]` — a JSON array of
+ *  mention descriptors (person/task/etc., each with a `label`). Render them as a
+ *  readable `@Label` instead of leaking raw JSON into task and comment bodies. */
+function renderProductiveMentions(text: string): string {
+  if (!text.includes('@[')) {
+    return text
+  }
+  return text.replace(/@(\[[^\]]*\])/g, (match, jsonArray: string) => {
+    try {
+      const parsed: unknown = JSON.parse(jsonArray)
+      if (!Array.isArray(parsed)) {
+        return match
+      }
+      const labels = parsed
+        .map((entry) =>
+          entry && typeof entry === 'object' ? asString((entry as ProductiveRecord).label) : ''
+        )
+        .filter((label) => label.length > 0)
+      return labels.length > 0 ? labels.map((label) => `@${label}`).join(' ') : match
+    } catch {
+      // Not a mention token (or malformed) — leave the original text untouched.
+      return match
+    }
+  })
+}
+
 /** Why: Productive description/comment bodies are HTML rich text, but the field
  *  has been observed to also carry plain text; accept both defensively and
  *  collapse toward Markdown so Orca renders them like Jira bodies. */
@@ -144,10 +170,12 @@ export function bodyToMarkdown(value: unknown): string {
   }
   if (!looksLikeHtml(value)) {
     // Plain text — the transform is effectively identity (trimmed of trailing ws).
-    return value
-      .replace(/[ \t]+\n/g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
+    return renderProductiveMentions(
+      value
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+    )
   }
 
   let text = value
@@ -158,10 +186,12 @@ export function bodyToMarkdown(value: unknown): string {
   // Drop all remaining tags.
   text = text.replace(/<[^>]+>/g, '')
   text = decodeEntities(text)
-  return text
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
+  return renderProductiveMentions(
+    text
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  )
 }
 
 /** Convert Orca's plain/Markdown editor text into the HTML body Productive
