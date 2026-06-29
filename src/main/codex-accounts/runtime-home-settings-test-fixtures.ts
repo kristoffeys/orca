@@ -107,6 +107,7 @@ export function createSettings(overrides: TestSettingsOverrides = {}): GlobalSet
     defaultTaskSource: 'github',
     visibleTaskProviders: ['github', 'gitlab', 'linear', 'jira'],
     visibleTaskProvidersDefaultedForJira: true,
+    visibleTaskProvidersDefaultedForProductive: true,
     defaultRepoSelection: null,
     defaultLinearTeamSelection: null,
     opencodeSessionCookie: '',

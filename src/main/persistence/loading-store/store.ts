@@ -1044,8 +1044,19 @@ export class Store {
           : rawTaskProviderSettings.visibleTaskProviders.includes('jira')
             ? rawTaskProviderSettings.visibleTaskProviders
             : [...rawTaskProviderSettings.visibleTaskProviders, 'jira' as const]
+        // Why: productive's one-shot backfill chains off the jira-migrated list so a
+        // single load can default both providers visible without one clobbering the
+        // other; the flag guards future opt-outs the same way jira's does.
+        const visibleTaskProvidersDefaultedForProductive =
+          parsed.settings?.visibleTaskProvidersDefaultedForProductive === true
+        const migratedVisibleTaskProvidersWithProductive =
+          visibleTaskProvidersDefaultedForProductive
+            ? migratedVisibleTaskProviders
+            : migratedVisibleTaskProviders.includes('productive')
+              ? migratedVisibleTaskProviders
+              : [...migratedVisibleTaskProviders, 'productive' as const]
         const taskProviderSettings = normalizeTaskProviderSettings({
-          visibleTaskProviders: migratedVisibleTaskProviders,
+          visibleTaskProviders: migratedVisibleTaskProvidersWithProductive,
           defaultTaskSource: rawTaskProviderSettings.defaultTaskSource
         })
         const primarySelectionDefaultedForLinux =
@@ -1065,6 +1076,9 @@ export class Store {
           this.loadNeedsSave = true
         }
         if (!visibleTaskProvidersDefaultedForJira) {
+          this.loadNeedsSave = true
+        }
+        if (!visibleTaskProvidersDefaultedForProductive) {
           this.loadNeedsSave = true
         }
         const claudeAgentTeamsDefaultDisabledMigrated =
@@ -1265,6 +1279,7 @@ export class Store {
             defaultTaskSource: taskProviderSettings.defaultTaskSource,
             visibleTaskProviders: taskProviderSettings.visibleTaskProviders,
             visibleTaskProvidersDefaultedForJira: true,
+            visibleTaskProvidersDefaultedForProductive: true,
             terminalShortcutPolicy: normalizeTerminalShortcutPolicy(
               parsed.settings?.terminalShortcutPolicy
             ),
