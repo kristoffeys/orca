@@ -1,3 +1,6 @@
+/* eslint-disable max-lines -- Why: one availability module covers every task
+   provider's source/target host checks; adding the productive branch keeps the
+   per-provider logic colocated rather than split across parallel files. */
 import type { Automation } from '../../../../shared/automations-types'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../../shared/execution-host'
 import {
@@ -261,6 +264,8 @@ function getAutomationSourceProviderLabel(provider: TaskSourceContext['provider'
       return 'Linear'
     case 'jira':
       return 'Jira'
+    case 'productive':
+      return 'Productive'
   }
 }
 

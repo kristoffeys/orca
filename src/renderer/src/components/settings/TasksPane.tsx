@@ -9,6 +9,7 @@ import {
 } from '../../../../shared/task-providers'
 import { JiraIcon } from '@/components/icons/JiraIcon'
 import { LinearIcon } from '@/components/icons/LinearIcon'
+import { ProductiveIcon } from '@/components/icons/ProductiveIcon'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
 import { SearchableSetting } from './SearchableSetting'
@@ -89,6 +90,18 @@ const PROVIDER_META: Record<
       )
     },
     Icon: ({ className }) => <JiraIcon className={className} />
+  },
+  productive: {
+    get label() {
+      return translate('auto.components.settings.TasksPane.productive01', 'Productive')
+    },
+    get description() {
+      return translate(
+        'auto.components.settings.TasksPane.productive02',
+        'Show Productive in the Tasks source picker and sidebar shortcuts.'
+      )
+    },
+    Icon: ({ className }) => <ProductiveIcon className={className} />
   }
 }
 

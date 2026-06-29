@@ -72,6 +72,18 @@ describe('workspace source policy', () => {
         jiraIdentifier: 'FUS-1'
       })
     ).toBe(true)
+    // Why: Productive tasks are organization-scoped, not repo-scoped, so a repo
+    // change must not clear them — same contract as Linear and Jira.
+    expect(
+      shouldPreserveWorkspaceSourceOnRepoChange({
+        provider: 'productive',
+        type: 'issue',
+        number: 0,
+        title: 'Org scoped',
+        url: 'https://app.productive.io/1/task/2',
+        productiveIdentifier: '#2'
+      })
+    ).toBe(true)
     expect(
       shouldPreserveWorkspaceSourceOnRepoChange({
         provider: 'github',

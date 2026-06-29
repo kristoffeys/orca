@@ -2,6 +2,7 @@ import React from 'react'
 import { EyeOff, Github, Gitlab, List } from 'lucide-react'
 import { JiraIcon } from '@/components/icons/JiraIcon'
 import { LinearIcon } from '@/components/icons/LinearIcon'
+import { ProductiveIcon } from '@/components/icons/ProductiveIcon'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -246,6 +247,18 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
                 onOpen={() => openTaskPage({ taskSource: 'jira' })}
               >
                 <JiraIcon className="size-3.5" />
+              </TaskProviderShortcut>
+            ) : null}
+            {visibleTaskProviders.includes('productive') ? (
+              <TaskProviderShortcut
+                canBrowseTasks={canBrowseTasks}
+                label={translate(
+                  'auto.components.sidebar.SidebarNav.productive01',
+                  'Open Productive tasks'
+                )}
+                onOpen={() => openTaskPage({ taskSource: 'productive' })}
+              >
+                <ProductiveIcon className="size-3.5" />
               </TaskProviderShortcut>
             ) : null}
           </span>

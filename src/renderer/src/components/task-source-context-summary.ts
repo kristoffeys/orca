@@ -1,3 +1,6 @@
+/* eslint-disable max-lines -- Why: this module summarizes every task provider's
+   source context in one place; the productive branches extend the existing
+   per-provider switches rather than warranting a separate file. */
 import { translate } from '@/i18n/i18n'
 import { getExecutionHostLabel } from '../../../shared/execution-host'
 import type { ExecutionHostScope } from '../../../shared/execution-host'
@@ -45,6 +48,7 @@ export function getTaskSourceContextSummary(args: {
   selectedRepoCount?: number
   linearWorkspaceName?: string | null
   jiraSiteName?: string | null
+  productiveOrganizationName?: string | null
 }): TaskSourceContextSummary {
   switch (args.provider) {
     case 'github':
@@ -60,6 +64,13 @@ export function getTaskSourceContextSummary(args: {
     case 'jira':
       return getAccountBackedTaskSourceSummary(args.providerLabel, {
         accountLabel: args.jiraSiteName,
+        accountHostId: args.accountHostId,
+        hostLabelById: args.hostLabelById,
+        hostAvailability: args.hostAvailability
+      })
+    case 'productive':
+      return getAccountBackedTaskSourceSummary(args.providerLabel, {
+        accountLabel: args.productiveOrganizationName,
         accountHostId: args.accountHostId,
         hostLabelById: args.hostLabelById,
         hostAvailability: args.hostAvailability
@@ -198,6 +209,8 @@ function getProviderIdentityLabel(
       return identity.workspaceName ?? identity.workspaceId ?? null
     case 'jira':
       return identity.siteUrl ?? identity.siteId ?? null
+    case 'productive':
+      return identity.organizationId ?? null
   }
 }
 
