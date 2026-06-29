@@ -1932,7 +1932,8 @@
         "productive01": "Productive",
         "productivetasksheader": "Productive tasks",
         "productiveidentifier": "ID",
-        "productivetask": "Task"
+        "productivetask": "Task",
+        "productivetasklist": "List"
       },
       "Terminal": {
         "73768427cf": "닫기",

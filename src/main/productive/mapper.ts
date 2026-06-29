@@ -382,6 +382,10 @@ export function mapProductiveTask(
     organizationId,
     project: projectId ? { ...project, id: projectId } : project,
     taskListId: relationshipId(relationships, 'task_list') ?? undefined,
+    taskList: (() => {
+      const record = resolveRelationship(relationships, 'task_list', lookup)
+      return asString(record.id) ? mapTaskList(record) : undefined
+    })(),
     status,
     assignee: mapPerson(assigneeRecord),
     createdAt: asString(attributes.created_at, now),

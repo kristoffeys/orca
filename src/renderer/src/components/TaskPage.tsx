@@ -11391,10 +11391,13 @@ export default function TaskPage(): React.JSX.Element {
                   </div>
                 </div>
 
-                <div className="grid h-8 flex-none grid-cols-[90px_minmax(0,1fr)_128px_80px] items-center gap-3 border-b border-border/50 bg-muted/25 px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground max-md:!hidden lg:grid-cols-[96px_minmax(0,1.25fr)_132px_136px_96px_64px] xl:grid-cols-[104px_minmax(0,1.45fr)_144px_160px_128px_72px]">
+                <div className="grid h-8 flex-none grid-cols-[90px_minmax(0,1fr)_128px_80px] items-center gap-3 border-b border-border/50 bg-muted/25 px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground max-md:!hidden lg:grid-cols-[96px_minmax(0,1.25fr)_132px_120px_136px_96px_64px] xl:grid-cols-[104px_minmax(0,1.45fr)_144px_132px_160px_128px_72px]">
                   <span>{translate('auto.components.TaskPage.productiveidentifier', 'ID')}</span>
                   <span>{translate('auto.components.TaskPage.productivetask', 'Task')}</span>
                   <span>{translate('auto.components.TaskPage.154b0fa623', 'Status')}</span>
+                  <span className="block max-lg:!hidden">
+                    {translate('auto.components.TaskPage.productivetasklist', 'List')}
+                  </span>
                   <span className="block max-lg:!hidden">
                     {translate('auto.components.TaskPage.d2a876ca53', 'Assignee')}
                   </span>
@@ -11475,7 +11478,7 @@ export default function TaskPage(): React.JSX.Element {
                                 }
                               }}
                               className={cn(
-                                'group/row grid min-h-12 cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-2 text-left transition hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:grid-cols-[90px_minmax(0,1fr)_128px_80px] lg:grid-cols-[96px_minmax(0,1.25fr)_132px_136px_96px_64px] xl:grid-cols-[104px_minmax(0,1.45fr)_144px_160px_128px_72px]',
+                                'group/row grid min-h-12 cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-2 text-left transition hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:grid-cols-[90px_minmax(0,1fr)_128px_80px] lg:grid-cols-[96px_minmax(0,1.25fr)_132px_120px_136px_96px_64px] xl:grid-cols-[104px_minmax(0,1.45fr)_144px_132px_160px_128px_72px]',
                                 selected && 'bg-accent'
                               )}
                             >
@@ -11508,6 +11511,11 @@ export default function TaskPage(): React.JSX.Element {
                                         'Unassigned'
                                       )}
                                   </span>
+                                  {task.taskList?.name ? (
+                                    <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+                                      · {task.taskList.name}
+                                    </span>
+                                  ) : null}
                                 </div>
                               </div>
 
@@ -11520,6 +11528,10 @@ export default function TaskPage(): React.JSX.Element {
                                 >
                                   <span className="truncate">{task.status.name}</span>
                                 </span>
+                              </div>
+
+                              <div className="flex min-w-0 items-center text-[12px] text-muted-foreground max-lg:!hidden">
+                                <span className="truncate">{task.taskList?.name ?? '—'}</span>
                               </div>
 
                               <div className="flex min-w-0 items-center gap-2 text-[12px] text-muted-foreground max-lg:!hidden">

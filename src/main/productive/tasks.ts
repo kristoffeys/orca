@@ -41,7 +41,7 @@ import {
 // Why: "me" reads filter on the configured viewer; the assigned/done filters key
 // off the workflow_status category (1/2 = open universe, 3 = closed) rather than
 // a Jira-style resolution field.
-const TASK_INCLUDE = 'project,assignee,workflow_status'
+const TASK_INCLUDE = 'project,assignee,workflow_status,task_list'
 
 type JsonApiResponse = {
   data?: ProductiveRecord | ProductiveRecord[]

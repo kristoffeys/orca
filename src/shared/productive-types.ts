@@ -73,6 +73,7 @@ export type ProductiveTask = {
   organizationId: string
   project: ProductiveProject
   taskListId?: string
+  taskList?: ProductiveTaskList
   status: ProductiveWorkflowStatus
   assignee?: ProductivePerson
   createdAt: string
